@@ -86,8 +86,8 @@ const Dashboard = () => {
               <AreaChart data={last30Days}>
                 <defs>
                   <linearGradient id="colorVisits" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#9b87f5" stopOpacity={0.8} />
-                    <stop offset="95%" stopColor="#9b87f5" stopOpacity={0} />
+                    <stop offset="5%" stopColor="#4ade80" stopOpacity={0.8} />
+                    <stop offset="95%" stopColor="#4ade80" stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <XAxis 
@@ -101,7 +101,7 @@ const Dashboard = () => {
                 <Area 
                   type="monotone" 
                   dataKey="value" 
-                  stroke="#7E69AB" 
+                  stroke="#22c55e" 
                   fillOpacity={1} 
                   fill="url(#colorVisits)" 
                   name="Visits"
@@ -128,7 +128,7 @@ const Dashboard = () => {
                 <Tooltip />
                 <Bar dataKey="count" radius={[0, 4, 4, 0]}>
                   {commonRemedies.slice(0, 5).map((_, index) => (
-                    <Cell key={`cell-${index}`} fill={`hsl(${260 - index * 10}, 75%, ${75 - index * 3}%)`} />
+                    <Cell key={`cell-${index}`} fill={`hsl(${142 - index * 8}, ${70 - index * 5}%, ${50 + index * 5}%)`} />
                   ))}
                 </Bar>
               </BarChart>
@@ -155,7 +155,7 @@ const Dashboard = () => {
                 <Tooltip />
                 <Bar dataKey="count" radius={[0, 4, 4, 0]}>
                   {commonSymptoms.slice(0, 5).map((_, index) => (
-                    <Cell key={`cell-${index}`} fill={`hsl(${220 - index * 10}, ${50 + index * 5}%, ${60 - index * 2}%)`} />
+                    <Cell key={`cell-${index}`} fill={`hsl(${132 + index * 5}, ${65 - index * 3}%, ${45 + index * 3}%)`} />
                   ))}
                 </Bar>
               </BarChart>
