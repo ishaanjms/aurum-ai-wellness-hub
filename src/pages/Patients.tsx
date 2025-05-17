@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { mockData, Patient } from "@/lib/mock-data";
 import { useNavigate } from "react-router-dom";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, Phone } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,12 +27,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
 import { toast } from "sonner";
 
 const Patients = () => {
   const navigate = useNavigate();
   const [patients, setPatients] = useState<Patient[]>(mockData.getPatients());
   const [searchTerm, setSearchTerm] = useState("");
+  const [searchType, setSearchType] = useState("name");
   const [isAddPatientOpen, setIsAddPatientOpen] = useState(false);
   const [newPatient, setNewPatient] = useState({
     name: "",
@@ -43,13 +50,18 @@ const Patients = () => {
     address: "",
   });
 
-  // Filter patients based on search term
+  // Filter patients based on search term and search type
   const filteredPatients = searchTerm
-    ? patients.filter(
-        (patient) =>
-          patient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          patient.id.toLowerCase().includes(searchTerm.toLowerCase())
-      )
+    ? patients.filter((patient) => {
+        if (searchType === "name") {
+          return patient.name.toLowerCase().includes(searchTerm.toLowerCase());
+        } else if (searchType === "id") {
+          return patient.id.toLowerCase().includes(searchTerm.toLowerCase());
+        } else if (searchType === "phone") {
+          return patient.contact.toLowerCase().includes(searchTerm.toLowerCase());
+        }
+        return true;
+      })
     : patients;
 
   const handleAddPatient = () => {
@@ -93,15 +105,51 @@ const Patients = () => {
       </div>
 
       <div className="flex gap-4 items-center">
-        <div className="relative flex-grow max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
-          <Input
-            placeholder="Search patients by name or ID..."
-            className="pl-10"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
+        <Tabs 
+          defaultValue="name" 
+          value={searchType} 
+          onValueChange={setSearchType}
+          className="w-[400px]"
+        >
+          <TabsList className="grid grid-cols-3">
+            <TabsTrigger value="name">Name</TabsTrigger>
+            <TabsTrigger value="id">ID</TabsTrigger>
+            <TabsTrigger value="phone">Phone</TabsTrigger>
+          </TabsList>
+          <TabsContent value="name" className="mt-2">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+              <Input
+                placeholder="Search patients by name..."
+                className="pl-10"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+          </TabsContent>
+          <TabsContent value="id" className="mt-2">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+              <Input
+                placeholder="Search patients by ID..."
+                className="pl-10"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+          </TabsContent>
+          <TabsContent value="phone" className="mt-2">
+            <div className="relative">
+              <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+              <Input
+                placeholder="Search patients by phone number..."
+                className="pl-10"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
 
       <div className="border rounded-md">
@@ -247,3 +295,4 @@ const Patients = () => {
 };
 
 export default Patients;
+
