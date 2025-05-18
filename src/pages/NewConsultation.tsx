@@ -1,19 +1,10 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { mockData, Patient, Remedy } from "@/lib/mock-data";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Separator } from "@/components/ui/separator";
-import { Loader2, Plus, Sparkles, Trash2 } from "lucide-react";
-import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from "@/components/ui/select";
+import { Loader2, Plus, Search, Sparkles, Trash2, UserPlus } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -21,7 +12,28 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
 
 const NewConsultation = () => {
   const { patientId } = useParams<{ patientId?: string }>();
@@ -31,6 +43,7 @@ const NewConsultation = () => {
   const [patients, setPatients] = useState<Patient[]>([]);
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
   const [isGeneratingRemedies, setIsGeneratingRemedies] = useState(false);
+  const [open, setOpen] = useState(false);
   
   const [consultation, setConsultation] = useState({
     date: new Date().toISOString().split("T")[0],
@@ -58,6 +71,7 @@ const NewConsultation = () => {
     setSelectedPatientId(value);
     const foundPatient = mockData.getPatient(value);
     setPatient(foundPatient || null);
+    setOpen(false);
   };
 
   const handleAddRemedy = () => {
@@ -161,7 +175,7 @@ const NewConsultation = () => {
     toast.success("Consultation saved successfully");
     navigate(`/patients/${selectedPatientId}`);
   };
-
+  
   // Simulate AI summary generation
   const generateAISummary = (symptoms: string): string => {
     // This would normally call an AI API
@@ -278,18 +292,59 @@ const NewConsultation = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Select value={selectedPatientId} onValueChange={handlePatientChange}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select a patient" />
-              </SelectTrigger>
-              <SelectContent>
-                {patients.map(p => (
-                  <SelectItem key={p.id} value={p.id}>
-                    {p.name} ({p.id})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Popover open={open} onOpenChange={setOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={open}
+                  className="w-full justify-between"
+                >
+                  {selectedPatientId
+                    ? patients.find((patient) => patient.id === selectedPatientId)?.name
+                    : "Search patients..."}
+                  <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-full p-0">
+                <Command>
+                  <CommandInput placeholder="Search patients..." />
+                  <CommandEmpty>No patient found.</CommandEmpty>
+                  <CommandGroup>
+                    {patients.map((patient) => (
+                      <CommandItem
+                        key={patient.id}
+                        value={patient.id}
+                        onSelect={handlePatientChange}
+                        className="flex justify-between"
+                      >
+                        <div>
+                          <span>{patient.name}</span>
+                          <span className="ml-2 text-xs text-muted-foreground">
+                            {patient.age}/{patient.gender.charAt(0)}
+                          </span>
+                        </div>
+                        <span className="text-xs text-muted-foreground">
+                          {patient.contact}
+                        </span>
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </Command>
+              </PopoverContent>
+            </Popover>
+            
+            <div className="mt-4">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="w-full" 
+                onClick={() => navigate("/patients")}
+              >
+                <UserPlus className="mr-2 h-4 w-4" />
+                Add New Patient
+              </Button>
+            </div>
             
             {patient && (
               <div className="mt-4 space-y-2">
