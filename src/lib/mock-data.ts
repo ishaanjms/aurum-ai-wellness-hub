@@ -1,10 +1,10 @@
-
 export type Patient = {
   id: string;
   name: string;
   age: number;
   gender: "male" | "female" | "other";
   contact: string;
+  alternativeContacts?: string[]; // Array of alternative contact numbers
   email: string;
   address: string;
   createdAt: string;
@@ -39,6 +39,7 @@ const patients: Patient[] = [
     age: 42,
     gender: "female",
     contact: "555-123-4567",
+    alternativeContacts: ["555-987-6543"],
     email: "jane.smith@example.com",
     address: "123 Elm Street, Springfield",
     createdAt: "2023-03-15T10:30:00Z",

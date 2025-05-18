@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { mockData, Patient, Consultation } from "@/lib/mock-data";
@@ -7,7 +6,7 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CalendarIcon, Edit, File, Users } from "lucide-react";
+import { CalendarIcon, Edit, File, Users, Plus, X } from "lucide-react";
 import { format } from "date-fns";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -24,6 +23,8 @@ const PatientDetails = () => {
   const [primaryPatient, setPrimaryPatient] = useState<Patient | null>(null);
   const [dependents, setDependents] = useState<Patient[]>([]);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [alternativeContacts, setAlternativeContacts] = useState<string[]>([]);
+  const [newContact, setNewContact] = useState("");
 
   const form = useForm({
     defaultValues: {
@@ -42,6 +43,7 @@ const PatientDetails = () => {
       if (foundPatient) {
         setPatient(foundPatient);
         setConsultations(mockData.getConsultations(id));
+        setAlternativeContacts(foundPatient.alternativeContacts || []);
         
         // If patient has a primary patient, fetch that primary patient
         if (foundPatient.primaryPatientId) {
@@ -82,6 +84,17 @@ const PatientDetails = () => {
     }
   };
 
+  const handleAddAlternativeContact = () => {
+    if (newContact && !alternativeContacts.includes(newContact)) {
+      setAlternativeContacts([...alternativeContacts, newContact]);
+      setNewContact("");
+    }
+  };
+
+  const handleRemoveAlternativeContact = (contact: string) => {
+    setAlternativeContacts(alternativeContacts.filter(c => c !== contact));
+  };
+
   const handleUpdatePatient = (data: any) => {
     if (!patient || !id) return;
 
@@ -92,17 +105,15 @@ const PatientDetails = () => {
       age: parseInt(data.age),
       gender: data.gender as "male" | "female" | "other",
       contact: data.contact,
+      alternativeContacts: alternativeContacts,
       email: data.email,
       address: data.address,
     };
 
-    // Update patient in mock data (assuming mockData has an updatePatient method)
-    // Note: We need to add this method to mockData
-    const patientsList = mockData.getPatients();
-    const patientIndex = patientsList.findIndex(p => p.id === id);
-    if (patientIndex !== -1) {
-      patientsList[patientIndex] = updatedPatient;
-      setPatient(updatedPatient);
+    // Update patient in mock data
+    const updated = mockData.updatePatient(id, updatedPatient);
+    if (updated) {
+      setPatient(updated);
       toast.success("Patient details updated successfully");
       setIsEditDialogOpen(false);
     }
@@ -163,21 +174,33 @@ const PatientDetails = () => {
                 <div className="grid grid-cols-[100px_1fr] gap-1 mt-2">
                   <p className="text-sm font-medium">Phone:</p>
                   <p className="text-sm">
-                    {patient.contact || 
+                    {patient?.contact || 
                       (primaryPatient ? 
                         <span className="text-muted-foreground">Uses primary: {primaryPatient.contact}</span> : 
                         "—")}
                   </p>
+                  
+                  {patient?.alternativeContacts && patient.alternativeContacts.length > 0 && (
+                    <>
+                      <p className="text-sm font-medium">Alternative:</p>
+                      <div className="text-sm">
+                        {patient.alternativeContacts.map((contact, index) => (
+                          <div key={index}>{contact}</div>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                  
                   <p className="text-sm font-medium">Email:</p>
                   <p className="text-sm">
-                    {patient.email || 
+                    {patient?.email || 
                       (primaryPatient ? 
                         <span className="text-muted-foreground">Uses primary: {primaryPatient.email}</span> : 
                         "—")}
                   </p>
                   <p className="text-sm font-medium">Address:</p>
                   <p className="text-sm">
-                    {patient.address || 
+                    {patient?.address || 
                       (primaryPatient ? 
                         <span className="text-muted-foreground">Uses primary: {primaryPatient.address}</span> : 
                         "—")}
@@ -422,7 +445,7 @@ const PatientDetails = () => {
                   name="contact"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Contact Number</FormLabel>
+                      <FormLabel>Primary Contact Number</FormLabel>
                       <FormControl>
                         <Input {...field} />
                       </FormControl>
@@ -430,6 +453,42 @@ const PatientDetails = () => {
                     </FormItem>
                   )}
                 />
+                
+                <div>
+                  <FormLabel>Alternative Contact Numbers</FormLabel>
+                  <div className="space-y-2">
+                    {alternativeContacts.map((contact, index) => (
+                      <div key={index} className="flex items-center gap-2">
+                        <Input value={contact} disabled className="flex-1" />
+                        <Button 
+                          type="button" 
+                          variant="ghost" 
+                          size="icon" 
+                          onClick={() => handleRemoveAlternativeContact(contact)}
+                        >
+                          <X size={16} />
+                        </Button>
+                      </div>
+                    ))}
+                    
+                    <div className="flex items-center gap-2">
+                      <Input 
+                        value={newContact} 
+                        onChange={(e) => setNewContact(e.target.value)} 
+                        placeholder="Add alternative contact"
+                        className="flex-1"
+                      />
+                      <Button 
+                        type="button" 
+                        onClick={handleAddAlternativeContact}
+                        size="icon"
+                        variant="outline"
+                      >
+                        <Plus size={16} />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
                 
                 <FormField
                   control={form.control}

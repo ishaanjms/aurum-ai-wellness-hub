@@ -1,11 +1,11 @@
 
 import { NavLink } from "react-router-dom";
-import { Home, User, Plus, Search, Settings } from "lucide-react";
+import { Home, User, Plus, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const Sidebar = () => {
   return (
-    <div className="h-screen bg-white border-r border-border flex flex-col w-64">
+    <div className="h-screen bg-white border-r border-border flex flex-col w-64 fixed">
       <div className="p-6 border-b border-border">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-full aurum-gradient flex items-center justify-center text-white font-bold">
@@ -15,7 +15,7 @@ const Sidebar = () => {
         </div>
       </div>
       
-      <nav className="flex-1 p-4">
+      <nav className="flex-1 p-4 overflow-y-auto">
         <div className="space-y-1">
           <NavItem to="/" icon={<Home size={18} />} label="Dashboard" />
           <NavItem to="/patients" icon={<User size={18} />} label="Patients" />
