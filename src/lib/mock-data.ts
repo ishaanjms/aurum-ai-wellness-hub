@@ -9,6 +9,8 @@ export type Patient = {
   address: string;
   createdAt: string;
   lastVisit: string;
+  primaryPatientId?: string; // ID of primary account holder if this is a dependent
+  dependents?: string[]; // Array of IDs for dependent patients
 };
 
 export type Consultation = {
@@ -40,7 +42,8 @@ const patients: Patient[] = [
     email: "jane.smith@example.com",
     address: "123 Elm Street, Springfield",
     createdAt: "2023-03-15T10:30:00Z",
-    lastVisit: "2025-05-10T14:15:00Z"
+    lastVisit: "2025-05-10T14:15:00Z",
+    dependents: ["P006"]
   },
   {
     id: "P002",
@@ -85,6 +88,18 @@ const patients: Patient[] = [
     address: "654 Cedar Court, Lakeside",
     createdAt: "2023-11-05T10:10:00Z",
     lastVisit: "2025-05-05T10:30:00Z"
+  },
+  {
+    id: "P006",
+    name: "Lily Smith",
+    age: 13,
+    gender: "female",
+    contact: "",
+    email: "",
+    address: "123 Elm Street, Springfield",
+    createdAt: "2024-01-15T10:30:00Z",
+    lastVisit: "2025-05-08T11:30:00Z",
+    primaryPatientId: "P001"
   }
 ];
 
@@ -232,13 +247,26 @@ const commonSymptoms: { name: string; count: number }[] = [
 export const mockData = {
   getPatients: () => [...patients],
   getPatient: (id: string) => patients.find(p => p.id === id),
-  addPatient: (patient: Omit<Patient, "id" | "createdAt" | "lastVisit">) => {
+  addPatient: (patient: Omit<Patient, "id" | "createdAt" | "lastVisit">, primaryPatientId?: string) => {
     const newPatient = {
       ...patient,
       id: `P${String(patients.length + 1).padStart(3, '0')}`,
       createdAt: new Date().toISOString(),
-      lastVisit: new Date().toISOString()
+      lastVisit: new Date().toISOString(),
+      primaryPatientId
     };
+    
+    // If this is a dependent, update the primary patient's dependents array
+    if (primaryPatientId) {
+      const primaryPatient = patients.find(p => p.id === primaryPatientId);
+      if (primaryPatient) {
+        if (!primaryPatient.dependents) {
+          primaryPatient.dependents = [];
+        }
+        primaryPatient.dependents.push(newPatient.id);
+      }
+    }
+    
     patients.push(newPatient as Patient);
     return newPatient;
   },
@@ -266,6 +294,7 @@ export const mockData = {
   },
   getCommonRemedies: () => [...commonRemedies],
   getCommonSymptoms: () => [...commonSymptoms],
+  getPrimaryPatients: () => patients.filter(p => !p.primaryPatientId),
   getPatientStats: () => {
     const today = new Date();
     const thirtyDaysAgo = new Date();

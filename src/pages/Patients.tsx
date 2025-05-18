@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { mockData, Patient } from "@/lib/mock-data";
 import { useNavigate } from "react-router-dom";
-import { Plus, Search, Phone } from "lucide-react";
+import { Plus, Search, Phone, Users } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -33,6 +33,7 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 
 const Patients = () => {
@@ -41,6 +42,9 @@ const Patients = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [searchType, setSearchType] = useState("name");
   const [isAddPatientOpen, setIsAddPatientOpen] = useState(false);
+  const [isDependent, setIsDependent] = useState(false);
+  const [primaryPatients, setPrimaryPatients] = useState<Patient[]>(mockData.getPrimaryPatients());
+  const [selectedPrimaryPatient, setSelectedPrimaryPatient] = useState<string>("");
   const [newPatient, setNewPatient] = useState({
     name: "",
     age: "",
@@ -70,18 +74,30 @@ const Patients = () => {
       return;
     }
 
-    const addedPatient = mockData.addPatient({
-      name: newPatient.name,
-      age: parseInt(newPatient.age),
-      gender: newPatient.gender as "male" | "female" | "other",
-      contact: newPatient.contact,
-      email: newPatient.email,
-      address: newPatient.address,
-    });
+    // If it's a dependent, we don't require contact info
+    if (!isDependent && !newPatient.contact) {
+      toast.error("Contact information is required for primary patients");
+      return;
+    }
 
+    const addedPatient = mockData.addPatient(
+      {
+        name: newPatient.name,
+        age: parseInt(newPatient.age),
+        gender: newPatient.gender as "male" | "female" | "other",
+        contact: newPatient.contact,
+        email: newPatient.email,
+        address: newPatient.address,
+      }, 
+      isDependent ? selectedPrimaryPatient : undefined
+    );
+
+    // Update both patients and primaryPatients lists
     setPatients(mockData.getPatients());
+    setPrimaryPatients(mockData.getPrimaryPatients());
+    
     setIsAddPatientOpen(false);
-    toast.success("Patient added successfully");
+    toast.success(`Patient ${isDependent ? "(Dependent)" : ""} added successfully`);
     setNewPatient({
       name: "",
       age: "",
@@ -90,6 +106,8 @@ const Patients = () => {
       email: "",
       address: "",
     });
+    setIsDependent(false);
+    setSelectedPrimaryPatient("");
 
     navigate(`/patients/${addedPatient.id}`);
   };
@@ -160,6 +178,7 @@ const Patients = () => {
               <TableHead>Name</TableHead>
               <TableHead>Age/Gender</TableHead>
               <TableHead>Contact</TableHead>
+              <TableHead>Type</TableHead>
               <TableHead>Last Visit</TableHead>
             </TableRow>
           </TableHeader>
@@ -176,7 +195,21 @@ const Patients = () => {
                   <TableCell>
                     {patient.age} / {patient.gender.charAt(0).toUpperCase()}
                   </TableCell>
-                  <TableCell>{patient.contact}</TableCell>
+                  <TableCell>{patient.contact || "—"}</TableCell>
+                  <TableCell>
+                    {patient.primaryPatientId ? (
+                      <div className="flex items-center text-sm text-muted-foreground">
+                        <span>Dependent</span>
+                      </div>
+                    ) : patient.dependents?.length ? (
+                      <div className="flex items-center text-sm">
+                        <Users size={14} className="mr-1" />
+                        <span>Primary ({patient.dependents.length})</span>
+                      </div>
+                    ) : (
+                      "Primary"
+                    )}
+                  </TableCell>
                   <TableCell>
                     {new Date(patient.lastVisit).toLocaleDateString()}
                   </TableCell>
@@ -184,7 +217,7 @@ const Patients = () => {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-6">
+                <TableCell colSpan={6} className="text-center py-6">
                   {searchTerm
                     ? "No patients found matching your search criteria"
                     : "No patients found"}
@@ -198,9 +231,50 @@ const Patients = () => {
       <Dialog open={isAddPatientOpen} onOpenChange={setIsAddPatientOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>Add New Patient</DialogTitle>
+            <DialogTitle>Add {isDependent ? "Dependent" : "New"} Patient</DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-4">
+            <div className="flex items-center space-x-2">
+              <Checkbox 
+                id="isDependent" 
+                checked={isDependent} 
+                onCheckedChange={(checked) => {
+                  setIsDependent(checked === true);
+                  if (!checked) setSelectedPrimaryPatient("");
+                }}
+              />
+              <label 
+                htmlFor="isDependent" 
+                className="text-sm font-medium leading-none cursor-pointer"
+              >
+                This is a dependent patient (child, etc.)
+              </label>
+            </div>
+
+            {isDependent && (
+              <div>
+                <label htmlFor="primaryPatient" className="text-sm font-medium leading-none mb-2 block">
+                  Primary Patient Account <span className="text-red-500">*</span>
+                </label>
+                <Select
+                  value={selectedPrimaryPatient}
+                  onValueChange={setSelectedPrimaryPatient}
+                  required
+                >
+                  <SelectTrigger id="primaryPatient">
+                    <SelectValue placeholder="Select primary patient" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {primaryPatients.map(patient => (
+                      <SelectItem key={patient.id} value={patient.id}>
+                        {patient.name} ({patient.contact})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
             <div className="grid grid-cols-1 gap-4">
               <div>
                 <label htmlFor="name" className="text-sm font-medium leading-none mb-2 block">
@@ -250,12 +324,13 @@ const Patients = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="contact" className="text-sm font-medium leading-none mb-2 block">
-                    Contact Number
+                    Contact Number {!isDependent && <span className="text-red-500">*</span>}
                   </label>
                   <Input
                     id="contact"
                     value={newPatient.contact}
                     onChange={(e) => setNewPatient({ ...newPatient, contact: e.target.value })}
+                    required={!isDependent}
                   />
                 </div>
                 <div>
@@ -283,7 +358,19 @@ const Patients = () => {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsAddPatientOpen(false)}>
+            <Button variant="outline" onClick={() => {
+              setIsAddPatientOpen(false);
+              setIsDependent(false);
+              setSelectedPrimaryPatient("");
+              setNewPatient({
+                name: "",
+                age: "",
+                gender: "",
+                contact: "",
+                email: "",
+                address: "",
+              });
+            }}>
               Cancel
             </Button>
             <Button onClick={handleAddPatient}>Add Patient</Button>
@@ -295,4 +382,3 @@ const Patients = () => {
 };
 
 export default Patients;
-

@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
-import { CalendarIcon, Edit, File } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { CalendarIcon, Edit, File, Users } from "lucide-react";
 import { format } from "date-fns";
 
 const PatientDetails = () => {
@@ -14,6 +15,8 @@ const PatientDetails = () => {
   const navigate = useNavigate();
   const [patient, setPatient] = useState<Patient | null>(null);
   const [consultations, setConsultations] = useState<Consultation[]>([]);
+  const [primaryPatient, setPrimaryPatient] = useState<Patient | null>(null);
+  const [dependents, setDependents] = useState<Patient[]>([]);
 
   useEffect(() => {
     if (id) {
@@ -21,6 +24,22 @@ const PatientDetails = () => {
       if (foundPatient) {
         setPatient(foundPatient);
         setConsultations(mockData.getConsultations(id));
+        
+        // If patient has a primary patient, fetch that primary patient
+        if (foundPatient.primaryPatientId) {
+          const primary = mockData.getPatient(foundPatient.primaryPatientId);
+          if (primary) {
+            setPrimaryPatient(primary);
+          }
+        }
+        
+        // If patient has dependents, fetch those dependent patients
+        if (foundPatient.dependents && foundPatient.dependents.length > 0) {
+          const deps = foundPatient.dependents
+            .map(depId => mockData.getPatient(depId))
+            .filter(Boolean) as Patient[];
+          setDependents(deps);
+        }
       }
     }
   }, [id]);
@@ -37,7 +56,12 @@ const PatientDetails = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">{patient.name}</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-3xl font-bold tracking-tight">{patient.name}</h1>
+            {patient.primaryPatientId && (
+              <Badge variant="outline" className="text-xs">Dependent</Badge>
+            )}
+          </div>
           <p className="text-muted-foreground">
             Patient ID: {patient.id} • Added on{" "}
             {format(new Date(patient.createdAt), "MMMM d, yyyy")}
@@ -68,13 +92,70 @@ const PatientDetails = () => {
                 <h3 className="font-semibold text-sm text-muted-foreground">Contact Information</h3>
                 <div className="grid grid-cols-[100px_1fr] gap-1 mt-2">
                   <p className="text-sm font-medium">Phone:</p>
-                  <p className="text-sm">{patient.contact}</p>
+                  <p className="text-sm">
+                    {patient.contact || 
+                      (primaryPatient ? 
+                        <span className="text-muted-foreground">Uses primary: {primaryPatient.contact}</span> : 
+                        "—")}
+                  </p>
                   <p className="text-sm font-medium">Email:</p>
-                  <p className="text-sm">{patient.email}</p>
+                  <p className="text-sm">
+                    {patient.email || 
+                      (primaryPatient ? 
+                        <span className="text-muted-foreground">Uses primary: {primaryPatient.email}</span> : 
+                        "—")}
+                  </p>
                   <p className="text-sm font-medium">Address:</p>
-                  <p className="text-sm">{patient.address}</p>
+                  <p className="text-sm">
+                    {patient.address || 
+                      (primaryPatient ? 
+                        <span className="text-muted-foreground">Uses primary: {primaryPatient.address}</span> : 
+                        "—")}
+                  </p>
                 </div>
               </div>
+
+              {primaryPatient && (
+                <>
+                  <Separator />
+                  <div>
+                    <h3 className="font-semibold text-sm text-muted-foreground">Primary Account</h3>
+                    <div 
+                      className="flex items-center gap-2 p-2 bg-muted/50 rounded-md mt-2 cursor-pointer hover:bg-muted"
+                      onClick={() => navigate(`/patients/${primaryPatient.id}`)}
+                    >
+                      <Users size={16} className="text-muted-foreground" />
+                      <div>
+                        <p className="text-sm font-medium">{primaryPatient.name}</p>
+                        <p className="text-xs text-muted-foreground">ID: {primaryPatient.id}</p>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {dependents.length > 0 && (
+                <>
+                  <Separator />
+                  <div>
+                    <h3 className="font-semibold text-sm text-muted-foreground">Dependents</h3>
+                    <div className="space-y-2 mt-2">
+                      {dependents.map(dep => (
+                        <div 
+                          key={dep.id}
+                          className="flex items-center gap-2 p-2 bg-muted/50 rounded-md cursor-pointer hover:bg-muted"
+                          onClick={() => navigate(`/patients/${dep.id}`)}
+                        >
+                          <div>
+                            <p className="text-sm font-medium">{dep.name}</p>
+                            <p className="text-xs text-muted-foreground">{dep.age} years • ID: {dep.id}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
 
               <Separator />
 
