@@ -9,9 +9,9 @@ const Sidebar = () => {
       <div className="p-6 border-b border-border">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-full aurum-gradient flex items-center justify-center text-white font-bold">
-            A
+            N
           </div>
-          <h1 className="text-xl font-bold text-primary">Aurum</h1>
+          <h1 className="text-xl font-bold text-primary">Notica</h1>
         </div>
       </div>
       
