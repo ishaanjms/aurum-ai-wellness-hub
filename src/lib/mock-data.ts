@@ -270,6 +270,14 @@ export const mockData = {
     patients.push(newPatient as Patient);
     return newPatient;
   },
+  updatePatient: (id: string, updatedData: Partial<Patient>) => {
+    const patientIndex = patients.findIndex(p => p.id === id);
+    if (patientIndex !== -1) {
+      patients[patientIndex] = { ...patients[patientIndex], ...updatedData };
+      return patients[patientIndex];
+    }
+    return null;
+  },
   getConsultations: (patientId?: string) => {
     if (patientId) {
       return consultations.filter(c => c.patientId === patientId);

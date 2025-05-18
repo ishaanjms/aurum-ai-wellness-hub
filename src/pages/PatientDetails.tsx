@@ -9,6 +9,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CalendarIcon, Edit, File, Users } from "lucide-react";
 import { format } from "date-fns";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
+import { useForm } from "react-hook-form";
+import { toast } from "sonner";
 
 const PatientDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -17,6 +23,18 @@ const PatientDetails = () => {
   const [consultations, setConsultations] = useState<Consultation[]>([]);
   const [primaryPatient, setPrimaryPatient] = useState<Patient | null>(null);
   const [dependents, setDependents] = useState<Patient[]>([]);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+
+  const form = useForm({
+    defaultValues: {
+      name: "",
+      age: "",
+      gender: "",
+      contact: "",
+      email: "",
+      address: "",
+    }
+  });
 
   useEffect(() => {
     if (id) {
@@ -44,6 +62,52 @@ const PatientDetails = () => {
     }
   }, [id]);
 
+  // Update form when patient data changes
+  useEffect(() => {
+    if (patient) {
+      form.reset({
+        name: patient.name,
+        age: patient.age.toString(),
+        gender: patient.gender,
+        contact: patient.contact,
+        email: patient.email,
+        address: patient.address,
+      });
+    }
+  }, [patient, form]);
+
+  const openEditDialog = () => {
+    if (patient) {
+      setIsEditDialogOpen(true);
+    }
+  };
+
+  const handleUpdatePatient = (data: any) => {
+    if (!patient || !id) return;
+
+    // Create updated patient object
+    const updatedPatient: Patient = {
+      ...patient,
+      name: data.name,
+      age: parseInt(data.age),
+      gender: data.gender as "male" | "female" | "other",
+      contact: data.contact,
+      email: data.email,
+      address: data.address,
+    };
+
+    // Update patient in mock data (assuming mockData has an updatePatient method)
+    // Note: We need to add this method to mockData
+    const patientsList = mockData.getPatients();
+    const patientIndex = patientsList.findIndex(p => p.id === id);
+    if (patientIndex !== -1) {
+      patientsList[patientIndex] = updatedPatient;
+      setPatient(updatedPatient);
+      toast.success("Patient details updated successfully");
+      setIsEditDialogOpen(false);
+    }
+  };
+
   if (!patient) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -67,9 +131,15 @@ const PatientDetails = () => {
             {format(new Date(patient.createdAt), "MMMM d, yyyy")}
           </p>
         </div>
-        <Button onClick={() => navigate(`/consultation/${patient.id}`)}>
-          New Consultation
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={openEditDialog}>
+            <Edit size={16} className="mr-1" />
+            Edit Profile
+          </Button>
+          <Button onClick={() => navigate(`/consultation/${patient.id}`)}>
+            New Consultation
+          </Button>
+        </div>
       </div>
 
       <div className="grid md:grid-cols-3 gap-6">
@@ -282,6 +352,124 @@ const PatientDetails = () => {
           </Tabs>
         </div>
       </div>
+
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Edit Patient Details</DialogTitle>
+          </DialogHeader>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(handleUpdatePatient)} className="space-y-4">
+              <div className="grid grid-cols-1 gap-4">
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Full Name</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="age"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Age</FormLabel>
+                        <FormControl>
+                          <Input type="number" min="0" max="120" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="gender"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Gender</FormLabel>
+                        <Select 
+                          onValueChange={field.onChange} 
+                          defaultValue={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select gender" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="male">Male</SelectItem>
+                            <SelectItem value="female">Female</SelectItem>
+                            <SelectItem value="other">Other</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                
+                <FormField
+                  control={form.control}
+                  name="contact"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Contact Number</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email</FormLabel>
+                      <FormControl>
+                        <Input type="email" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="address"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Address</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit">Save Changes</Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
