@@ -45,7 +45,7 @@ const Layout = () => {
       )}
       
       <div className="flex-1 flex flex-col pl-64">
-        <main className="flex-1 p-6">
+        <main className="flex-1 p-4">
           <Outlet />
         </main>
       </div>
